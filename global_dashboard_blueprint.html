@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Santander Global Dashboard</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, Arial, sans-serif; background: #f3f4f6; color: #1f2937; }
+    .canvas-page { width: 1280px; min-height: 720px; margin: 0 auto; display: none; }
+    .canvas-page.active { display: block; }
+    .container { padding: 18px 18px 24px; }
+    .hero { min-height: 720px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 18px; }
+    .hero-title { font-size: 64px; font-weight: 800; color: #e4002b; line-height: 1; }
+    .hero-subtitle { font-size: 22px; font-weight: 600; color: #1f2937; }
+    .launcher { display: flex; gap: 10px; background: #fff; border: 1px solid #e5e7eb; border-radius: 18px; padding: 10px 14px; box-shadow: 0 4px 12px rgba(15,23,42,.08); flex-wrap: wrap; justify-content: center; }
+    .nav-link { cursor: pointer; border-radius: 10px; padding: 10px 14px; font-size: 14px; font-weight: 600; color: #111827; user-select: none; white-space: nowrap; }
+    .nav-link.active { color: #e4002b; background: #fee2e2; }
+    .navbar { position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,.95); backdrop-filter: blur(10px); border-bottom: 1px solid #e5e7eb; padding: 12px 18px; border-radius: 0 0 18px 18px; box-shadow: 0 6px 20px rgba(15,23,42,.06); }
+    .nav-logo { font-size: 18px; font-weight: 800; color: #e4002b; }
+    .nav-links { display: flex; gap: 6px; flex-wrap: wrap; }
+    .filter-bar { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .filter-group { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 10px 12px; min-height: 72px; }
+    .filter-label-top { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; margin-bottom: 8px; }
+    .filter-select { width: 100%; border: 1px solid #d1d5db; border-radius: 10px; padding: 9px 10px; font-size: 13px; background: #fff; color: #111827; }
+    .kpi-row { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
+    .kpi-card, .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 18px; box-shadow: 0 6px 16px rgba(15,23,42,.05); }
+    .kpi-card { padding: 12px 14px; min-height: 96px; }
+    .kpi-card .label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; margin-bottom: 8px; font-weight: 700; }
+    .kpi-card .metric { font-size: 22px; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
+    .kpi-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .kpi-change { font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 999px; }
+    .kpi-change.up { color: #047857; background: #d1fae5; }
+    .kpi-change.down { color: #b91c1c; background: #fee2e2; }
+    .kpi-context { font-size: 12px; color: #6b7280; }
+    .card { padding: 14px; }
+    .card-title { font-size: 16px; font-weight: 800; color: #111827; margin-bottom: 8px; }
+    .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; align-items: stretch; }
+    .secondary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+    .table-container { max-height: 340px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; }
+    th { position: sticky; top: 0; z-index: 1; background: #f9fafb; font-weight: 800; color: #111827; text-align: left; padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }
+    th[data-sort] { cursor: pointer; user-select: none; }
+    th[data-sort]:hover { background: #f3f4f6; }
+    td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+    .total-row td { font-weight: 800; color: #111827; background: #f8fafc; }
+    .heatmap-layout { display: grid; grid-template-columns: 190px 1fr; gap: 12px; align-items: stretch; }
+    .metric-panel { border: 1px solid #e5e7eb; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px; min-height: 280px; }
+    .metric-panel h3 { margin: 0; font-size: 12px; text-transform: uppercase; color: #e4002b; letter-spacing: .05em; }
+    .metric-hint { font-size: 11px; color: #6b7280; margin-bottom: 4px; }
+    .metric-option { display: flex; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 10px; font-size: 11px; cursor: pointer; }
+    .metric-option.active { background: #fee2e2; }
+    .map-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+    .map-header h4 { margin: 0; font-size: 18px; font-weight: 800; }
+    .map-subtitle { font-size: 12px; color: #6b7280; margin-top: 4px; }
+    .badge { border: 1px solid #d1d5db; background: #f8fafc; border-radius: 999px; padding: 6px 10px; font-size: 12px; color: #475569; white-space: nowrap; }
+    .map-body { display: grid; grid-template-columns: 1fr 52px; gap: 12px; align-items: center; }
+    #mapSvg { width: 100%; height: 300px; }
+    .country-shape { stroke: #fff; stroke-width: 2; cursor: pointer; }
+    .country-label { font-size: 10px; font-weight: 700; fill: #6b7280; pointer-events: none; }
+    .legend { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 12px; color: #6b7280; }
+    .legend-bar { width: 12px; height: 220px; border-radius: 999px; background: linear-gradient(to top, #fee2e2, #e4002b); border: 1px solid #e5e7eb; }
+    .trend-wrap { display: flex; flex-direction: column; gap: 10px; }
+    .trend-subfilter, .trend-note { font-size: 12px; color: #6b7280; }
+    .trend-chart-wrap { position: relative; overflow: hidden; padding-bottom: 10px; }
+    .trend-svg { width: 100%; height: 220px; overflow: hidden; }
+    .pie-svg { width: 100%; height: 260px; }
+    svg { overflow: visible; }
+  </style>
+</head>
+<body>
+  <div id="homePage" class="canvas-page active">
+    <div class="container hero">
+      <div class="hero-title">Santander</div>
+      <div class="hero-subtitle">Global Marketing Performance</div>
+      <div class="launcher">
+        <div class="nav-link" data-page="globalOverviewPage">Global Overview</div>
+        <div class="nav-link" data-page="offlinePage">Offline Performance</div>
+        <div class="nav-link" data-page="onlinePage">Online Performance</div>
+        <div class="nav-link" data-page="competitivePage">Competitive Benchmarking</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="globalOverviewPage" class="canvas-page">
+    <div class="navbar"><div class="nav-logo">Santander</div><div class="nav-links"><div class="nav-link" data-page="homePage">Home</div><div class="nav-link active" data-page="globalOverviewPage">Global Overview</div><div class="nav-link" data-page="offlinePage">Offline Performance</div><div class="nav-link" data-page="onlinePage">Online Performance</div><div class="nav-link" data-page="competitivePage">Competitive Benchmarking</div></div></div>
+    <div class="container">
+      <div class="filter-bar" style="grid-template-columns:repeat(8,minmax(0,1fr));">
+        <div class="filter-group"><div class="filter-label-top">Date</div><select class="filter-select" id="filterDateValue"></select></div>
+        <div class="filter-group"><div class="filter-label-top">Market</div><select class="filter-select" id="filterMarket"></select></div>
+        <div class="filter-group"><div class="filter-label-top">Brand</div><select class="filter-select" id="filterBrand"></select></div>
+        <div class="filter-group"><div class="filter-label-top">Business</div><select class="filter-select" id="filterBusiness"></select></div>
+        <div class="filter-group"><div class="filter-label-top">Product Family</div><select class="filter-select" id="filterProductFamily"></select></div>
+        <div class="filter-group"><div class="filter-label-top">Product</div><select class="filter-select" id="filterProduct"></select></div>
+        <div class="filter-group"><div class="filter-label-top">Channel</div><select class="filter-select" id="filterChannel"></select></div>
+        <div class="filter-group"><div class="filter-label-top">Platform</div><select class="filter-select" id="filterPlatform"></select></div>
+      </div>
+      <div class="kpi-row" id="globalKpis"></div>
+      <div class="main-grid">
+        <div class="card">
+          <div class="card-title">Market Heat Map</div>
+          <div class="heatmap-layout">
+            <div class="metric-panel">
+              <h3>Metric</h3>
+              <div class="metric-hint">Select one or more metrics.</div>
+              <label class="metric-option active"><input type="checkbox" name="metric" value="totalMediaSpend" checked> Total Spend</label>
+              <label class="metric-option"><input type="checkbox" name="metric" value="onlineMediaSpend"> Online Spend</label>
+              <label class="metric-option"><input type="checkbox" name="metric" value="offlineMediaSpend"> Offline Spend</label>
+              <label class="metric-option"><input type="checkbox" name="metric" value="impressions"> Impressions</label>
+              <label class="metric-option"><input type="checkbox" name="metric" value="clicks"> Clicks</label>
+              <label class="metric-option"><input type="checkbox" name="metric" value="cpc"> CPC</label>
+              <label class="metric-option"><input type="checkbox" name="metric" value="cac"> CAC</label>
+            </div>
+            <div>
+              <div class="map-header"><div><h4 id="mapTitle">Total Spend by Market</h4><div class="map-subtitle">The map uses the first selected metric. Click a market to filter the dashboard.</div></div><div class="badge" id="selectedBadge">All markets</div></div>
+              <div class="map-body"><svg id="mapSvg" viewBox="0 0 720 420"></svg><div class="legend"><div>Higher</div><div class="legend-bar"></div><div>Lower</div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="height:100%;display:flex;flex-direction:column;"><div class="card-title">Market Ranking Table</div><div class="table-container" style="flex:1;"><table id="marketTable"><thead><tr id="tableHeaderRow"></tr></thead><tbody></tbody></table></div></div>
+      </div>
+      <div class="main-grid" style="margin-top:16px; grid-template-columns: 1fr;">
+        <div class="card"><div class="card-title">Monthly Investment Evolution — 2025</div><div class="trend-wrap"><div class="trend-subfilter" id="trendScopeLabel2025"></div><div class="trend-chart-wrap"><svg class="trend-svg" id="trendSvg2025" viewBox="0 0 720 250"></svg></div></div></div>
+        <div class="card"><div class="card-title">Monthly Investment Evolution — 2026</div><div class="trend-wrap"><div class="trend-subfilter" id="trendScopeLabel2026"></div><div class="trend-chart-wrap"><svg class="trend-svg" id="trendSvg2026" viewBox="0 0 720 250"></svg></div></div></div>
+      </div>
+      <div class="secondary-grid">
+        <div class="card"><div class="card-title">Investment by Channel</div><svg class="pie-svg" id="channelSvg" viewBox="0 0 320 260"></svg><div id="channelChartTitle" class="trend-note"></div></div>
+        <div class="card"><div class="card-title">Investment by Platform</div><svg class="pie-svg" id="platformSvg" viewBox="0 0 320 260"></svg><div id="platformChartTitle" class="trend-note"></div></div>
+        <div class="card"><div class="card-title">Investment by Product</div><svg class="pie-svg" id="productSvg" viewBox="0 0 320 260"></svg><div id="productChartTitle" class="trend-note"></div></div>
+        <div class="card"><div class="card-title">Investment by Business Unit</div><svg class="pie-svg" id="businessSvg" viewBox="0 0 320 260"></svg><div id="businessChartTitle" class="trend-note"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="offlinePage" class="canvas-page">
+    <div class="navbar"><div class="nav-logo">Santander</div><div class="nav-links"><div class="nav-link" data-page="homePage">Home</div><div class="nav-link" data-page="globalOverviewPage">Global Overview</div><div class="nav-link active" data-page="offlinePage">Offline Performance</div><div class="nav-link" data-page="onlinePage">Online Performance</div><div class="nav-link" data-page="competitivePage">Competitive Benchmarking</div></div></div>
+    <div class="container">
+      <div class="filter-bar">
+        <div class="filter-group"><div class="filter-label-top">Date</div><select class="filter-select" id="offlineDate"></select></div>
+        <div class="filter-group"><div class="filter-label-top">Market</div><select class="filter-select" id="offlineMarket"></select></div>
+        <div class="filter-group"><div class="filter-label-top">Media Type</div><select class="filter-select" id="offlineMediaType"></select></div>
+        <div class="filter-group"><div class="filter-label-top">Channel</div><select class="filter-select" id="offlineChannel"></select></div>
+        <div class="filter-group"><div class="filter-label-top">Brand</div><select class="filter-select" id="offlineBrand"></select></div>
+        <div class="filter-group"><div class="filter-label-top">Product Line</div><select class="filter-select" id="offlineProductLine"></select></div>
+      </div>
+      <div class="kpi-row" style="grid-template-columns: repeat(3, minmax(0,1fr));" id="offlineKpis"></div>
+      <div class="card"><div class="card-title">Offline Market Ranking</div><div class="table-container"><table id="offlineRankingTable"></table></div></div>
+      <div class="main-grid" style="margin-top:16px;"><div class="card"><div class="card-title">Investment by Channel (Media Type)</div><svg id="offlineSpendChart" viewBox="0 0 520 240"></svg></div><div class="card"><div class="card-title">GRPs by Channel</div><svg id="offlineGrpChart" viewBox="0 0 520 240"></svg></div></div>
+      <div class="card" style="margin-top:16px;"><div class="card-title">Monthly Spend &amp; GRPs Evolution</div><svg id="offlineTrendChart" viewBox="0 0 1120 300" style="width:100%;height:300px;"></svg></div>
+    </div>
+  </div>
+
+  <div id="onlinePage" class="canvas-page">
+    <div class="navbar"><div class="nav-logo">Santander</div><div class="nav-links"><div class="nav-link" data-page="homePage">Home</div><div class="nav-link" data-page="globalOverviewPage">Global Overview</div><div class="nav-link" data-page="offlinePage">Offline Performance</div><div class="nav-link active" data-page="onlinePage">Online Performance</div><div class="nav-link" data-page="competitivePage">Competitive Benchmarking</div></div></div>
+    <div class="container">
+      <div class="filter-bar">
+        <div class="filter-group"><div class="filter-label-top">Date</div><select class="filter-select" id="onlineDate"></select></div>
+        <div class="filter-group"><div class="filter-label-top">Market</div><select class="filter-select" id="onlineMarket"></select></div>
+        <div class="filter-group"><div class="filter-label-top">Campaign</div><select class="filter-select" id="onlineCampaign"></select></div>
+        <div class="filter-group"><div class="filter-label-top">Objective</div><select class="filter-select" id="onlineObjective"></select></div>
+        <div class="filter-group"><div class="filter-label-top">Channel</div><select class="filter-select" id="onlineChannel"></select></div>
+        <div class="filter-group"><div class="filter-label-top">Platform</div><select class="filter-select" id="onlinePlatform"></select></div>
+      </div>
+      <div class="kpi-row" style="grid-template-columns: repeat(5, minmax(0,1fr));" id="onlineKpis"></div>
+      <div class="card"><div class="card-title">Online Market Ranking</div><div class="table-container"><table id="onlineRankingTable"></table></div></div>
+      <div class="main-grid" style="margin-top:16px; grid-template-columns: 1fr 1fr; align-items:stretch;">
+        <div class="card"><div class="card-title">Investment by Channel</div><svg id="onlineChannelChart" viewBox="0 0 1200 420" style="width:100%;height:420px;display:block;"></svg></div>
+        <div class="card"><div class="card-title">Investment by Platform</div><svg id="onlinePlatformChart" viewBox="0 0 1200 420" style="width:100%;height:420px;display:block;"></svg></div>
+      </div>
+      <div class="card" style="margin-top:16px; display:flex; flex-direction:column;"><div class="card-title">Campaign Performance</div><div class="table-container" style="flex:1; max-height:none; min-height:650px; font-size:15px;"><table id="onlineCampaignTable"></table></div></div>
+      <div class="secondary-grid" style="grid-template-columns: repeat(3, minmax(0,1fr)); margin-top:16px;"><div class="card"><div class="card-title">Funnel</div><svg id="onlineFunnelChart" viewBox="0 0 380 280"></svg></div><div class="card"><div class="card-title">Cost vs Clicks by Month</div><svg id="onlineCostClicksChart" viewBox="0 0 380 280"></svg></div><div class="card"><div class="card-title">Impressions vs Conversions by Month</div><svg id="onlineImprConvChart" viewBox="0 0 380 280"></svg></div></div>
+    </div>
+  </div>
+
+  <div id="competitivePage" class="canvas-page">
+    <div class="navbar"><div class="nav-logo">Santander</div><div class="nav-links"><div class="nav-link" data-page="homePage">Home</div><div class="nav-link" data-page="globalOverviewPage">Global Overview</div><div class="nav-link" data-page="offlinePage">Offline Performance</div><div class="nav-link" data-page="onlinePage">Online Performance</div><div class="nav-link active" data-page="competitivePage">Competitive Benchmarking</div></div></div>
+    <div class="container">
+      <div class="filter-bar">
+        <div class="filter-group"><div class="filter-label-top">Date</div><select class="filter-select" id="compDate"></select></div>
+        <div class="filter-group"><div class="filter-label-top">Market</div><select class="filter-select" id="compMarket"></select></div>
+        <div class="filter-group"><div class="filter-label-top">Competitor</div><select class="filter-select" id="compBrand"></select></div>
+        <div class="filter-group"><div class="filter-label-top">Brand</div><select class="filter-select" id="compEntityBrand"></select></div>
+        <div class="filter-group"><div class="filter-label-top">Product</div><select class="filter-select" id="compProduct"></select></div>
+        <div class="filter-group"><div class="filter-label-top">Metric</div><select class="filter-select" id="compMetric"></select></div>
+      </div>
+      <div class="kpi-row" style="grid-template-columns: repeat(3, minmax(0,1fr));" id="compKpis"></div>
+      <div class="main-grid"><div class="card"><div class="card-title">Competitive Positioning</div><svg id="compBubbleChart" viewBox="0 0 560 320"></svg></div><div class="card"><div class="card-title">Benchmark Table</div><div class="table-container"><table id="compTable"></table></div></div></div>
+      <div class="secondary-grid" style="grid-template-columns: repeat(3, minmax(0,1fr));"><div class="card"><div class="card-title">Investment &amp; GRPs by Month</div><svg id="compMarketChart" viewBox="0 0 380 280"></svg></div><div class="card"><div class="card-title">Investment by Channel</div><svg id="compChannelChart" viewBox="0 0 380 280"></svg></div><div class="card"><div class="card-title">Investment by Product</div><svg id="compProductChart" viewBox="0 0 380 280"></svg></div></div>
+    </div>
+  </div>
+
+  <script>
+    const state = { date:'2026', market:'All markets', global:{ brand:'All brands', business:'All businesses', productFamily:'All product families', product:'All products', channel:'All channels', platform:'All platforms', metrics:['totalMediaSpend'] }, offline:{ mediaType:'All', channel:'All', brand:'All', productLine:'All' }, online:{ campaign:'All campaigns', objective:'All objectives', channel:'All channels', platform:'All' }, competitive:{ competitor:'All competitors', brand:'All brands', product:'All products', metric:'Share of Voice' } };
+    const allMarkets = ['All markets','Uruguay','Argentina','Chile','Spain','Portugal','Mexico','Brazil','United States','United Kingdom','Nordics','Germany'];
+    const compMarkets = ['All comparable markets','Spain','Argentina','Brazil','Portugal'];
+    const dates = ['2026','Q1 2026','Q2 2026','Q3 2026','Q4 2026'];
+    const monthLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const marketData = [
+      {market:'Uruguay', total:8, online:5, offline:3, impressions:42, clicks:1.9, ctr:4.5, cpc:0.82, cac:95},
+      {market:'Argentina', total:28, online:17, offline:11, impressions:120, clicks:5.2, ctr:4.3, cpc:0.74, cac:105},
+      {market:'Chile', total:19, online:12, offline:7, impressions:88, clicks:3.8, ctr:4.3, cpc:0.79, cac:99},
+      {market:'Spain', total:62, online:38, offline:24, impressions:260, clicks:10.3, ctr:4.0, cpc:0.66, cac:84},
+      {market:'Portugal', total:16, online:9, offline:7, impressions:72, clicks:3.1, ctr:4.3, cpc:0.71, cac:90},
+      {market:'Mexico', total:41, online:27, offline:14, impressions:180, clicks:8.4, ctr:4.7, cpc:0.69, cac:102},
+      {market:'Brazil', total:58, online:37, offline:21, impressions:240, clicks:11.2, ctr:4.7, cpc:0.62, cac:88},
+      {market:'United States', total:54, online:33, offline:21, impressions:230, clicks:9.1, ctr:4.0, cpc:0.77, cac:118},
+      {market:'United Kingdom', total:33, online:21, offline:12, impressions:144, clicks:5.7, ctr:4.0, cpc:0.80, cac:111},
+      {market:'Nordics', total:24, online:15, offline:9, impressions:94, clicks:4.0, ctr:4.3, cpc:0.83, cac:107},
+      {market:'Germany', total:47, online:29, offline:18, impressions:206, clicks:7.6, ctr:3.7, cpc:0.73, cac:97}
+    ];
+    const compBrands = [
+      {brand:'Santander', sov:21.4, soi:22.6, grps:3850, spendRank:2, type:'santander', product:'Current Account'},
+      {brand:'BBVA', sov:18.9, soi:19.5, grps:3402, spendRank:3, type:'trad', product:'Credit Card'},
+      {brand:'CaixaBank', sov:24.1, soi:25.2, grps:4018, spendRank:1, type:'trad', product:'Mortgage'},
+      {brand:'ING', sov:15.2, soi:14.7, grps:2980, spendRank:4, type:'digital', product:'Savings'},
+      {brand:'N26', sov:8.7, soi:7.9, grps:1710, spendRank:6, type:'digital', product:'Current Account'},
+      {brand:'Revolut', sov:11.7, soi:10.8, grps:2265, spendRank:5, type:'digital', product:'Cards'}
+    ];
+    const onlineCampaignData = [
+      {name:'ES_RCB_ACC_CUR_FY26Q1_A0_ACUERDOS', market:'Spain', channel:'Search', platform:'Google', objective:'Sales', cost:1.12, clicks:1.84, conversions:34.35, impressions:286.79, cpc:0.61, cpa:0.03},
+      {name:'ES_RCB_ACC_CUR_NA_A0_BAU', market:'Spain', channel:'Search', platform:'Google', objective:'Traffic', cost:0.71, clicks:1.05, conversions:0.64, impressions:85.30, cpc:0.68, cpa:1.10},
+      {name:'ES_RCB_ACC_CUR_FY26Q1_SSN_IPHONE17', market:'Spain', channel:'Social', platform:'Meta', objective:'Lead Gen', cost:0.05, clicks:0.03, conversions:0.11, impressions:9.43, cpc:1.55, cpa:0.44},
+      {name:'BR_CARDS_ALWAYS_ON', market:'Brazil', channel:'Search', platform:'Google', objective:'Sales', cost:0.52, clicks:0.77, conversions:0.22, impressions:126.50, cpc:0.68, cpa:2.36},
+      {name:'AR_LOANS_SEARCH_ALWAYS_ON', market:'Argentina', channel:'Search', platform:'Google', objective:'Sales', cost:0.33, clicks:0.41, conversions:0.13, impressions:68.10, cpc:0.80, cpa:2.54},
+      {name:'PT_SAVINGS_RETARGETING', market:'Portugal', channel:'Social', platform:'Meta', objective:'Traffic', cost:0.18, clicks:0.22, conversions:0.08, impressions:44.00, cpc:0.82, cpa:2.25},
+
+      // EXTRA ROWS (dummy but realistic)
+      {name:'MX_CARDS_PROSPECTING_Q2', market:'Mexico', channel:'Social', platform:'Meta', objective:'Lead Gen', cost:0.42, clicks:0.56, conversions:0.18, impressions:92.00, cpc:0.75, cpa:2.33},
+      {name:'UK_MORTGAGE_DISPLAY_ALWAYS_ON', market:'United Kingdom', channel:'Programmatic', platform:'DV360', objective:'Traffic', cost:0.38, clicks:0.44, conversions:0.12, impressions:78.00, cpc:0.86, cpa:3.17},
+      {name:'DE_LOANS_SEARCH_Q1', market:'Germany', channel:'Search', platform:'Google', objective:'Sales', cost:0.47, clicks:0.63, conversions:0.19, impressions:110.00, cpc:0.74, cpa:2.47},
+      {name:'US_SAVINGS_TIKTOK_CAMPAIGN', market:'United States', channel:'Social', platform:'TikTok', objective:'Traffic', cost:0.29, clicks:0.51, conversions:0.09, impressions:140.00, cpc:0.57, cpa:3.22},
+      {name:'BR_INSURANCE_RETARGETING', market:'Brazil', channel:'Programmatic', platform:'DV360', objective:'Sales', cost:0.61, clicks:0.69, conversions:0.27, impressions:132.00, cpc:0.88, cpa:2.26},
+      {name:'CL_CREDITCARD_SOCIAL_Q3', market:'Chile', channel:'Social', platform:'Meta', objective:'Lead Gen', cost:0.21, clicks:0.33, conversions:0.11, impressions:54.00, cpc:0.64, cpa:1.91},
+      {name:'PT_HOMELOAN_SEARCH_ALWAYS_ON', market:'Portugal', channel:'Search', platform:'Google', objective:'Sales', cost:0.25, clicks:0.36, conversions:0.14, impressions:61.00, cpc:0.69, cpa:1.79},
+      {name:'AR_SAVINGS_DISPLAY_Q2', market:'Argentina', channel:'Programmatic', platform:'DV360', objective:'Traffic', cost:0.19, clicks:0.28, conversions:0.07, impressions:49.00, cpc:0.68, cpa:2.71},
+      {name:'ES_INSURANCE_CROSSSELL_META', market:'Spain', channel:'Social', platform:'Meta', objective:'Sales', cost:0.33, clicks:0.48, conversions:0.21, impressions:88.00, cpc:0.69, cpa:1.57},
+      {name:'NORDICS_INVESTMENT_SEARCH', market:'Nordics', channel:'Search', platform:'Google', objective:'Traffic', cost:0.36, clicks:0.42, conversions:0.13, impressions:70.00, cpc:0.85, cpa:2.77}
+    ];
+    const metricLabelMap = { totalMediaSpend:'Total Spend', onlineMediaSpend:'Online Spend', offlineMediaSpend:'Offline Spend', impressions:'Impressions', clicks:'Clicks', cpc:'CPC', cac:'CAC' };
+    const marketPathMap = {
+      'Spain': {d:'M271 220l49-8 29 7 5 27-34 25-46 1-12-15', label:['ESP',293,247]},
+      'Portugal': {d:'M255 238l16-3 3 21-12 18-14-4', label:['PRT',255,232]},
+      'Germany': {d:'M390 121l34-5 18 18-6 31-27 21-28-9-10-27', label:['DEU',396,149]},
+      'United States': {d:'M53 132l100-14 55 12-12 29-75 19-82-8-18-21', label:['USA',90,150]},
+      'Brazil': {d:'M196 282l61-6 41 17 18 33-15 44-37 13-45-22-24-35', label:['BRA',213,330]},
+      'Argentina': {d:'M182 308l22 5 19 62-13 28-25-3-14-35 2-41', label:['ARG',180,385]}
+    };
+    function byId(id){ return document.getElementById(id); }
+    function setPage(id){ document.querySelectorAll('.canvas-page').forEach(p=>p.classList.remove('active')); if (byId(id)) byId(id).classList.add('active'); document.querySelectorAll('.nav-link').forEach(n=>n.classList.toggle('active', n.dataset.page===id)); window.scrollTo(0,0); }
+    function setOptions(selector, values, currentValue, onChange){ document.querySelectorAll(selector).forEach(select=>{ select.innerHTML = values.map(v=>`<option value="${v}">${v}</option>`).join(''); select.value = currentValue; if(onChange) select.onchange = ()=>onChange(select.value); }); }
+    function syncSelectors(){
+      setOptions('#filterDateValue, #offlineDate, #onlineDate, #compDate', dates, state.date, v=>{ state.date=v; syncSelectors(); renderAll(); });
+      setOptions('#filterMarket, #offlineMarket, #onlineMarket', allMarkets, state.market, v=>{ state.market=v; syncSelectors(); renderAll(); });
+      setOptions('#compMarket', compMarkets, compMarkets.includes(state.market)?state.market:'All comparable markets', v=>{ state.market = v==='All comparable markets'?'All markets':v; syncSelectors(); renderAll(); });
+      setOptions('#filterBrand', ['All brands','Santander','Openbank'], state.global.brand, v=>state.global.brand=v);
+      setOptions('#filterBusiness', ['All businesses','Retail & Commercial Banking','Digital Consumer Bank','Payments'], state.global.business, v=>state.global.business=v);
+      setOptions('#filterProductFamily', ['All product families','Accounts','Cards','Loans'], state.global.productFamily, v=>state.global.productFamily=v);
+      setOptions('#filterProduct', ['All products','Current Account','Credit Card','Home Loan','Mortgage','Savings'], state.global.product, v=>{ state.global.product=v; renderOverview(); });
+      setOptions('#filterChannel', ['All channels','Paid Search','Programmatic','Social','Search','Affiliate'], state.global.channel, v=>{ state.global.channel=v; renderOverview(); });
+      setOptions('#filterPlatform', ['All platforms','DV360','Meta','GoogleAds','SA360','CM360'], state.global.platform, v=>{ state.global.platform=v; renderOverview(); });
+      setOptions('#offlineMediaType', ['All','TV','Radio','OOH','Press'], state.offline.mediaType, v=>{ state.offline.mediaType=v; renderOffline(); });
+      setOptions('#offlineChannel', ['All','TV National','TV Regional','Radio','OOH','Press'], state.offline.channel, v=>{ state.offline.channel=v; renderOffline(); });
+      setOptions('#offlineBrand', ['All','Santander','Openbank'], state.offline.brand, v=>state.offline.brand=v);
+      setOptions('#offlineProductLine', ['All','Accounts','Cards','Loans'], state.offline.productLine, v=>state.offline.productLine=v);
+      setOptions('#onlineCampaign', ['All campaigns', ...onlineCampaignData.map(d=>d.name)], state.online.campaign, v=>{ state.online.campaign=v; renderOnline(); });
+      setOptions('#onlineObjective', ['All objectives','Traffic','Lead Gen','Sales'], state.online.objective, v=>{ state.online.objective=v; renderOnline(); });
+      setOptions('#onlineChannel', ['All channels','Search','Social','Programmatic','Affiliate'], state.online.channel, v=>{ state.online.channel=v; renderOnline(); });
+      setOptions('#onlinePlatform', ['All','Google','Meta','DV360','TikTok'], state.online.platform, v=>{ state.online.platform=v; renderOnline(); });
+      setOptions('#compBrand', ['All competitors','Santander','BBVA','CaixaBank','ING','N26','Revolut'], state.competitive.competitor, v=>{ state.competitive.competitor=v; renderCompetitive(); });
+      setOptions('#compEntityBrand', ['All brands','Santander','Openbank'], state.competitive.brand, v=>state.competitive.brand=v);
+      setOptions('#compProduct', ['All products','Current Account','Credit Card','Home Loan','Mortgage','Cards','Savings'], state.competitive.product, v=>{ state.competitive.product=v; renderCompetitive(); });
+      setOptions('#compMetric', ['Share of Voice','Share of Investment'], state.competitive.metric, v=>{ state.competitive.metric=v; renderCompetitive(); });
+      document.querySelectorAll('input[name="metric"]').forEach(input=>{ input.checked = state.global.metrics.includes(input.value); input.onchange = ()=>{ const checked=[...document.querySelectorAll('input[name="metric"]:checked')].map(i=>i.value); state.global.metrics = checked.length ? checked : ['totalMediaSpend']; document.querySelectorAll('.metric-option').forEach(opt=>opt.classList.toggle('active', !!opt.querySelector('input') && opt.querySelector('input').checked)); renderOverview(); }; });
+      document.querySelectorAll('.metric-option').forEach(opt=>opt.classList.toggle('active', !!opt.querySelector('input') && opt.querySelector('input').checked));
+    }
+    function formatMetric(key,value){ if(key==='cpc'||key==='cac') return `€${Number(value).toFixed(key==='cpc'?2:0)}`; if(key==='clicks') return `${Number(value).toFixed(1)}M`; if(key==='impressions') return `${Number(value).toFixed(0)}M`; return `€${Number(value).toFixed(0)}M`; }
+    function kpiCard(label,value,delta,context){ const cls=String(delta).trim().startsWith('-')?'down':'up'; return `<div class="kpi-card"><div class="label">${label}</div><div class="metric">${value}</div><div class="kpi-meta"><span class="kpi-change ${cls}">${delta}</span><span class="kpi-context">${context||''}</span></div></div>`; }
+    function drawBarChart(svgId, items, colors, left=118){ const svg=byId(svgId); if(!svg) return; const max=Math.max(...items.map(i=>i.value),1); svg.innerHTML = items.map((item,i)=>{ const y=34+i*42, width=180*(item.value/max)+30; return `<text x="18" y="${y+13}" font-size="12" fill="#6b7280">${item.label}</text><rect x="${left}" y="${y}" width="${width}" height="18" rx="9" fill="${colors[i%colors.length]}"><title>${item.label}: ${item.text||item.value}</title></rect><text x="${left+width+8}" y="${y+13}" font-size="10" fill="#374151">${item.text||item.value}</text>`; }).join(''); }
+    function drawLineChart(svgId, seriesA, seriesB, labelA, labelB){ const svg=byId(svgId); if(!svg) return; const max=Math.max(...seriesA,...seriesB,1), x=i=>36+i*28, y=v=>236-(v/max)*150; svg.innerHTML = `<line x1="36" y1="24" x2="36" y2="236" stroke="#d1d5db" stroke-width="1.2"></line><line x1="36" y1="236" x2="348" y2="236" stroke="#d1d5db" stroke-width="1.2"></line><polyline fill="none" stroke="#e4002b" stroke-width="3" points="${seriesA.map((v,i)=>`${x(i)},${y(v)}`).join(' ')}"><title>${labelA}</title></polyline><polyline fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-dasharray="5 4" points="${seriesB.map((v,i)=>`${x(i)},${y(v)}`).join(' ')}"><title>${labelB}</title></polyline>${monthLabels.map((m,i)=>`<text x="${x(i)-8}" y="252" font-size="10" fill="#6b7280">${m}</text>`).join('')}<rect x="48" y="12" width="10" height="3" fill="#e4002b"></rect><text x="62" y="16" font-size="10" fill="#6b7280">${labelA}</text><rect x="118" y="12" width="10" height="3" fill="#9ca3af"></rect><text x="132" y="16" font-size="10" fill="#6b7280">${labelB}</text>`; }
+    function drawWideLineChart(svgId, seriesA, seriesB, labelA, labelB){ const svg=byId(svgId); if(!svg) return; const max=Math.max(...seriesA,...seriesB,1), x=i=>52+i*84, y=v=>246-(v/max)*152; svg.innerHTML = `<line x1="52" y1="24" x2="52" y2="246" stroke="#d1d5db" stroke-width="1.2"></line><line x1="52" y1="246" x2="1060" y2="246" stroke="#d1d5db" stroke-width="1.2"></line><polyline fill="none" stroke="#e4002b" stroke-width="3" points="${seriesA.map((v,i)=>`${x(i)},${y(v)}`).join(' ')}"><title>${labelA}</title></polyline><polyline fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-dasharray="5 4" points="${seriesB.map((v,i)=>`${x(i)},${y(v)}`).join(' ')}"><title>${labelB}</title></polyline>${monthLabels.map((m,i)=>`<text x="${x(i)-8}" y="266" font-size="10" fill="#6b7280">${m}</text>`).join('')}<rect x="64" y="12" width="10" height="3" fill="#e4002b"></rect><text x="78" y="16" font-size="10" fill="#6b7280">${labelA}</text><rect x="128" y="12" width="10" height="3" fill="#9ca3af"></rect><text x="142" y="16" font-size="10" fill="#6b7280">${labelB}</text>`; }
+    function drawDonut(svgId, items, colors){ const svg = byId(svgId); if(!svg) return; const total = items.reduce((a,b)=>a+b.value,0)||1; let angle=0; const cx=120, cy=95, r1=55, r2=32; const polar=(r,a)=>{ const rad=(a-90)*Math.PI/180; return {x:cx+r*Math.cos(rad), y:cy+r*Math.sin(rad)}; }; const arc=(start,end)=>{ const so=polar(r1,end), eo=polar(r1,start), si=polar(r2,end), ei=polar(r2,start); const large=end-start<=180?0:1; return `M ${so.x} ${so.y} A ${r1} ${r1} 0 ${large} 0 ${eo.x} ${eo.y} L ${ei.x} ${ei.y} A ${r2} ${r2} 0 ${large} 1 ${si.x} ${si.y} Z`; }; const slices=items.map((it,i)=>{ const a=(it.value/total)*360; const d=arc(angle, angle+a); angle+=a; const pct=((it.value/total)*100).toFixed(0); return `<path d="${d}" fill="${colors[i%colors.length]}"><title>${it.label}: €${it.value.toFixed(1)}M (${pct}%)</title></path>`; }).join(''); const maxPerRow=2, startX=24, rowGap=16, colGap=132, legendY=198; const legend=items.map((it,i)=>{ const x=startX+(i%maxPerRow)*colGap; const y=legendY+Math.floor(i/maxPerRow)*rowGap; const pct=((it.value/total)*100).toFixed(0); return `<g transform="translate(${x}, ${y})"><rect width="10" height="10" fill="${colors[i%colors.length]}"></rect><text x="14" y="9" font-size="9" fill="#374151">${it.label} ${pct}%</text></g>`; }).join(''); svg.innerHTML=`${slices}<circle cx="${cx}" cy="${cy}" r="${r2}" fill="#fff"></circle>${legend}`; }
+    function renderMap(metricKey){ const values={}; marketData.forEach(m=>{ values[m.market]=metricKey==='totalMediaSpend'?m.total:metricKey==='onlineMediaSpend'?m.online:metricKey==='offlineMediaSpend'?m.offline:m[metricKey]; }); const onlyMarkets=Object.keys(marketPathMap); const max=Math.max(...onlyMarkets.map(m=>values[m]||0),1); const min=Math.min(...onlyMarkets.map(m=>values[m]||0)); const color=v=>{ const t=(v-min)/((max-min)||1); const light=92-t*42; return `hsl(353, 85%, ${light}%)`; }; const bg=`<rect x="0" y="0" width="720" height="420" fill="#f7f7f7" rx="12"></rect><path d="M418 34l29 7 22 21-3 17 18 15 23-2 26 11 27-8 19 8 7 18-10 17 12 19-9 25-31 0-22 14-1 37-28 18-21 0-11 10-36 7-29-14-20-1-28 17-36-3-18-27-8-23 6-29 18-16 30-8 20-19 7-25 19-15 26-4z" fill="#ececec" stroke="#ffffff" stroke-width="2"></path>`; const shapes=onlyMarkets.map(m=>{ const p=marketPathMap[m]; const selected=state.market===m; return `<path class="country-shape" d="${p.d}" fill="${selected ? '#e4002b' : color(values[m]||0)}" data-market-select="${m}"><title>${m}: ${formatMetric(metricKey, values[m]||0)}</title></path><text class="country-label" x="${p.label[1]}" y="${p.label[2]}">${p.label[0]}</text>`; }).join(''); byId('mapSvg').innerHTML=bg+shapes; }
+    function renderCountryTrend(svgId, yearKey){ const svg=byId(svgId); if(!svg) return; const baseSeries={ Uruguay:{y2025:[4,4.5,4.8,5,5.3,5.5,5.7,5.9,6.2,6.4,6.7,7],y2026:[4.4,4.8,5.1,5.3,5.5,5.8,6.1,6.3,6.6,6.8,7.1,7.4]}, Argentina:{y2025:[12,13,14,15,16,17,18,18.5,19,20,21,22],y2026:[13,14.2,15.4,16,17.3,18.2,19.1,20,20.9,21.8,22.6,23.4]}, Chile:{y2025:[8,8.6,9.1,9.5,10,10.4,10.8,11.1,11.5,12,12.4,12.8],y2026:[8.7,9.2,9.7,10.2,10.7,11.2,11.7,12.1,12.5,13,13.4,13.8]}, Spain:{y2025:[31,34,36,39,41,44,46,47,49,51,53,56],y2026:[34,37,40,43,46,49,52,54,57,60,63,66]}, Portugal:{y2025:[7,7.4,7.8,8.2,8.6,9,9.4,9.7,10,10.4,10.8,11.2],y2026:[7.6,8,8.4,8.8,9.2,9.7,10.1,10.5,10.9,11.3,11.7,12.1]}, Mexico:{y2025:[18,19,20.5,22,23,24,25,26,27,28,29,30],y2026:[19.5,20.6,22,23.5,24.7,26,27.2,28.3,29.5,30.7,31.8,33]}, Brazil:{y2025:[27,29,31,33,35,37,39,40,42,44,46,48],y2026:[29,31,33.5,35.8,38,40.3,42.6,44.4,46.7,48.9,51,53]}, 'United States':{y2025:[25,26,27.5,29,30,31,32,33,34,35,36,37],y2026:[26.5,27.8,29.1,30.4,31.7,33,34.2,35.1,36.3,37.4,38.6,39.8]}, 'United Kingdom':{y2025:[14,15,16,17,18,19,20,20.5,21,22,23,24],y2026:[15,16,17,18,19,20.2,21.3,22,22.8,23.7,24.6,25.5]}, Nordics:{y2025:[10,10.5,11,11.5,12,12.5,13,13.5,14,14.5,15,15.5],y2026:[10.7,11.2,11.7,12.2,12.7,13.3,13.8,14.3,14.8,15.4,15.9,16.4]}, Germany:{y2025:[22,23,24,25,26,27,28,29,30,31,32,33],y2026:[23.5,24.6,25.7,26.8,27.9,29,30.2,31.1,32.2,33.3,34.4,35.5]} }; const allSeries=marketData.map(c=>({market:c.market, values:baseSeries[c.market][yearKey]})); const maxVal=Math.max(...allSeries.flatMap(s=>s.values),1); const x=i=>36+i*48; const y=v=>224-(v/maxVal)*150; const selected=state.market!=='All markets'?state.market:null; const palette=['#e4002b','#0ea5e9','#8b5cf6','#f59e0b','#10b981','#ef4444','#6366f1','#14b8a6','#f97316','#84cc16','#ec4899']; const legend=allSeries.map((s,idx)=>`<rect x="${40 + idx*54}" y="10" width="10" height="3" fill="${palette[idx%palette.length]}"></rect><text x="${55 + idx*54}" y="13" font-size="9" fill="#374151">${s.market.substring(0,3).toUpperCase()}</text>`).join(''); const lines=allSeries.map((series,idx)=>{ const isSelected=selected?series.market===selected:false; const stroke=isSelected?'#e4002b':palette[idx%palette.length]; const width=isSelected?3.6:2; const opacity=selected?(isSelected?1:0.75):0.95; const pts=series.values.map((v,i)=>`${x(i)},${y(v)}`).join(' '); return `<polyline fill="none" stroke="${stroke}" stroke-width="${width}" opacity="${opacity}" points="${pts}" data-market-select="${series.market}"><title>${series.market} — ${yearKey==='y2025'?'2025':'2026'} — Dec: ${series.values[11]}M</title></polyline>`; }).join(''); const months=monthLabels.map((m,i)=>`<text x="${x(i)-8}" y="238" font-size="10" fill="#6b7280">${m}</text>`).join(''); svg.innerHTML=`${legend}<line x1="36" y1="224" x2="660" y2="224" stroke="#d1d5db" stroke-width="1.2"></line><line x1="36" y1="74" x2="660" y2="74" stroke="#eceff3" stroke-width="1"></line><line x1="36" y1="124" x2="660" y2="124" stroke="#eceff3" stroke-width="1"></line><line x1="36" y1="174" x2="660" y2="174" stroke="#eceff3" stroke-width="1"></line>${lines}${months}`; }
+    function renderOverview(){ const rows=state.market==='All markets'?marketData:marketData.filter(d=>d.market===state.market); const total=rows.reduce((a,b)=>a+b.total,0), online=rows.reduce((a,b)=>a+b.online,0), offline=rows.reduce((a,b)=>a+b.offline,0), impressions=rows.reduce((a,b)=>a+b.impressions,0), clicks=rows.reduce((a,b)=>a+b.clicks,0), cpc=rows.reduce((a,b)=>a+b.cpc*b.online,0)/(online||1), cac=rows.reduce((a,b)=>a+b.cac*b.total,0)/(total||1); const sortState = window.__marketSort || { key: 'totalMediaSpend', desc: true }; byId('globalKpis').innerHTML=[kpiCard('Total Spend',`€${total.toFixed(0)}M`,'+8.4% YoY','vs LY'),kpiCard('Impressions',`${impressions.toFixed(0)}M`,'+9.1% YoY','vs LY'),kpiCard('Clicks',`${clicks.toFixed(1)}M`,'+6.7% YoY','vs LY'),kpiCard('Conversions',`${(clicks*0.23).toFixed(1)}M`,'+10.2% YoY','vs LY'),kpiCard('CPC',`€${cpc.toFixed(2)}`,'+5.1% YoY','cost efficiency'),kpiCard('CPA',`€${(cac*0.85).toFixed(0)}`,'-3.1% YoY','cost per acquisition'),kpiCard('Online Spend',`€${online.toFixed(0)}M`,'+11.5% YoY',`${((online/(total||1))*100).toFixed(1)}% of total`),kpiCard('Offline Spend',`€${offline.toFixed(0)}M`,'+3.5% YoY',`${((offline/(total||1))*100).toFixed(1)}% of total`)].join(''); const metrics=state.global.metrics; const arrowFor = (key) => sortState.key===key ? (sortState.desc ? ' ↓' : ' ↑') : '';
+      byId('tableHeaderRow').innerHTML=`<th data-sort="market">Market${arrowFor('market')}</th>${metrics.map(m=>`<th data-sort="${m}">${metricLabelMap[m]}${arrowFor(m)}</th>`).join('')}<th data-sort="share">% of Total Spend${arrowFor('share')}</th>`;
+      const metricValue = (row, key) => key==='totalMediaSpend' ? row.total : key==='onlineMediaSpend' ? row.online : key==='offlineMediaSpend' ? row.offline : row[key];
+      const sortedRows = [...rows].sort((a,b)=>{
+        let va, vb;
+        if(sortState.key==='market'){
+          va = a.market; vb = b.market;
+          return sortState.desc ? vb.localeCompare(va) : va.localeCompare(vb);
+        }
+        if(sortState.key==='share'){
+          va = a.total; vb = b.total;
+        } else {
+          va = metricValue(a, sortState.key);
+          vb = metricValue(b, sortState.key);
+        }
+        return sortState.desc ? vb - va : va - vb;
+      });
+      document.querySelector('#marketTable tbody').innerHTML=`${sortedRows.map(r=>`<tr><td>${r.market}</td>${metrics.map(m=>`<td>${formatMetric(m, metricValue(r, m))}</td>`).join('')}<td>${(r.total/(total||1)*100).toFixed(1)}%</td></tr>`).join('')}<tr class="total-row"><td>Total</td>${metrics.map(m=>`<td>${formatMetric(m, m==='totalMediaSpend'?total:m==='onlineMediaSpend'?online:m==='offlineMediaSpend'?offline:m==='impressions'?impressions:m==='clicks'?clicks:m==='cpc'?cpc:cac)}</td>`).join('')}<td>100.0%</td></tr>`;
+      document.querySelectorAll('#tableHeaderRow th[data-sort]').forEach(th=>{
+        th.onclick = () => {
+          const key = th.dataset.sort;
+          if(window.__marketSort && window.__marketSort.key===key){
+            window.__marketSort.desc = !window.__marketSort.desc;
+          } else {
+            window.__marketSort = { key, desc: true };
+          }
+          renderOverview();
+        };
+      }); byId('selectedBadge').textContent=state.market; byId('mapTitle').textContent=`${metricLabelMap[metrics[0]]} by Market${metrics.length>1?` + ${metrics.length-1} metrics`:''}`; renderMap(metrics[0]); byId('trendScopeLabel2025').textContent=`Scope: ${state.market}`; byId('trendScopeLabel2026').textContent=`Scope: ${state.market}`; renderCountryTrend('trendSvg2025','y2025'); renderCountryTrend('trendSvg2026','y2026'); let channelItems=[{label:'Programmatic',value:42},{label:'Social',value:38},{label:'Search',value:54},{label:'Affiliate',value:25}]; if(state.global.channel!=='All channels'){ const mapped=state.global.channel==='Paid Search'?'Search':state.global.channel; channelItems=channelItems.filter(x=>x.label===mapped); } let platformItems=[{label:'DV360',value:28},{label:'Meta',value:39},{label:'GoogleAds',value:49},{label:'SA360',value:34},{label:'CM360',value:9}]; if(state.global.platform!=='All platforms') platformItems=platformItems.filter(x=>x.label===state.global.platform); drawDonut('channelSvg',channelItems,['#e4002b','#f43f5e','#fb7185','#fda4af','#fecdd3']); byId('channelChartTitle').textContent=`Channel split — ${state.market}`; drawDonut('platformSvg',platformItems,['#e4002b','#f43f5e','#fb7185','#fda4af','#fecdd3']); byId('platformChartTitle').textContent=`Platform split — ${state.market}`; drawDonut('productSvg',[{label:'Current Account',value:46},{label:'Credit Card',value:38},{label:'Home Loan',value:31},{label:'Mortgage',value:24},{label:'Savings',value:18}],['#f59e0b','#fbbf24','#fcd34d','#fde68a','#fef3c7']); byId('productChartTitle').textContent=`Product split — ${state.market}`; drawDonut('businessSvg',[{label:'Retail',value:68},{label:'Digital',value:52},{label:'Payments',value:39}],['#2563eb','#3b82f6','#60a5fa']); byId('businessChartTitle').textContent=`Business split — ${state.market}`; }
+    function renderOffline(){ const rows=(state.market==='All markets'?marketData:marketData.filter(d=>d.market===state.market)).map(r=>({market:r.market, spend:r.offline, grps:Math.round(r.offline*20), spots:Math.round(r.offline*90)})); const spend=rows.reduce((a,b)=>a+b.spend,0), grps=rows.reduce((a,b)=>a+b.grps,0), spots=rows.reduce((a,b)=>a+b.spots,0); byId('offlineKpis').innerHTML=[kpiCard('Offline Spend',`€${spend}M`,'+3.5% YoY','traditional media only'),kpiCard('GRPs',grps.toLocaleString(),'+4.2%','vs last quarter'),kpiCard('# Spots',spots.toLocaleString(),'-2.4%','reported insertions')].join(''); byId('offlineRankingTable').innerHTML=`<thead><tr><th>Market</th><th>Offline Spend</th><th>GRPs</th><th># Spots</th><th>% of Offline Spend</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.market}</td><td>€${r.spend}M</td><td>${r.grps.toLocaleString()}</td><td>${r.spots.toLocaleString()}</td><td>${(r.spend/(spend||1)*100).toFixed(1)}%</td></tr>`).join('')}<tr class="total-row"><td>Total</td><td>€${spend}M</td><td>${grps.toLocaleString()}</td><td>${spots.toLocaleString()}</td><td>100.0%</td></tr></tbody>`; drawBarChart('offlineSpendChart',[{label:'TV',value:53,text:'€78M · 53%'},{label:'OOH',value:19,text:'€28M · 19%'},{label:'Radio',value:14,text:'€21M · 14%'},{label:'Press',value:14,text:'€20M · 14%'}],['#e4002b','#f43f5e','#fb7185','#fda4af']); drawBarChart('offlineGrpChart',[{label:'TV National',value:1240,text:'1,240'},{label:'TV Regional',value:620,text:'620'},{label:'Radio',value:310,text:'310'},{label:'OOH',value:170,text:'170'}],['#e4002b','#f43f5e','#fb7185','#fda4af']); drawWideLineChart('offlineTrendChart',[10,11,12,13,14,15,13,12,14,15,16,17],[180,195,210,220,230,245,205,185,215,225,240,290],'Spend','GRPs'); }
+    function renderOnline(){ const rows=state.market==='All markets'?marketData:marketData.filter(d=>d.market===state.market); const campaigns=onlineCampaignData.filter(r=>(state.market==='All markets'||r.market===state.market)&&(state.online.campaign==='All campaigns'||r.name===state.online.campaign)&&(state.online.objective==='All objectives'||r.objective===state.online.objective)&&(state.online.channel==='All channels'||r.channel===state.online.channel)&&(state.online.platform==='All'||r.platform===state.online.platform)); const online=rows.reduce((a,b)=>a+b.online,0), impressions=rows.reduce((a,b)=>a+b.impressions,0), clicks=rows.reduce((a,b)=>a+b.clicks,0), cpc=rows.reduce((a,b)=>a+b.cpc*b.online,0)/(online||1), cac=rows.reduce((a,b)=>a+b.cac*b.online,0)/(online||1); byId('onlineKpis').innerHTML=[
+        kpiCard('Online Spend',`€${online.toFixed(0)}M`,'+11.5% YoY','vs LY'),
+        kpiCard('Impressions',`${impressions.toFixed(0)}M`,'+9.1% YoY','vs LY'),
+        kpiCard('Clicks',`${clicks.toFixed(1)}M`,'+6.7% YoY','vs LY'),
+        kpiCard('CPC',`€${cpc.toFixed(2)}`,'-5.1%','improved efficiency'),
+        kpiCard('CPA',`€${(cac*0.85).toFixed(0)}`,'-4.3%','vs LY')
+      ].join(''); byId('onlineRankingTable').innerHTML=`<thead><tr><th>Market</th><th>Online Spend</th><th>Impressions</th><th>Clicks</th><th>CPA</th><th>CPC</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.market}</td><td>€${r.online}M</td><td>${r.impressions.toFixed(0)}M</td><td>${r.clicks.toFixed(1)}M</td><td>€${(r.cac*0.85).toFixed(0)}</td><td>€${r.cpc.toFixed(2)}</td></tr>`).join('')}<tr class="total-row"><td>Total</td><td>€${online}M</td><td>${impressions.toFixed(0)}M</td><td>${clicks.toFixed(1)}M</td><td>€${(cac*0.85).toFixed(0)}</td><td>€${cpc.toFixed(2)}</td></tr></tbody>`; const drawLargeBars=(svgId, items, colors)=>{ const svg=byId(svgId); if(!svg) return; const max=Math.max(...items.map(i=>i.value),1); const left=170, barMax=760; svg.innerHTML=items.map((item,i)=>{ const y=56+i*82; const width=(item.value/max)*barMax; return `<text x="24" y="${y+20}" font-size="18" font-weight="600" fill="#475569">${item.label}</text><rect x="${left}" y="${y}" width="${width}" height="26" rx="13" fill="${colors[i%colors.length]}"><title>${item.label}: ${item.text}</title></rect><text x="${left+width+12}" y="${y+20}" font-size="15" fill="#334155">${item.text}</text>`; }).join(''); }; let channelItems=[{label:'Search',value:82,text:'€82M'},{label:'Social',value:65,text:'€65M'},{label:'Programmatic',value:47,text:'€47M'},{label:'Affiliate',value:27,text:'€27M'}]; if(state.online.channel!=='All channels') channelItems=channelItems.filter(x=>x.label===state.online.channel); drawLargeBars('onlineChannelChart', channelItems, ['#e4002b','#f43f5e','#fb7185','#fda4af']); let platformItems=[{label:'Google',value:95,text:'€95M'},{label:'Meta',value:78,text:'€78M'},{label:'DV360',value:52,text:'€52M'},{label:'TikTok',value:31,text:'€31M'}]; if(state.online.platform!=='All') platformItems=platformItems.filter(x=>x.label===state.online.platform); drawLargeBars('onlinePlatformChart', platformItems, ['#0ea5e9','#38bdf8','#7dd3fc','#bae6fd']); byId('onlineCampaignTable').innerHTML=`<thead><tr><th>Campaign Name</th><th>Impressions</th><th>Clicks</th><th>Cost</th><th>Conversions</th><th>CPC</th><th>CPA</th></tr></thead><tbody>${campaigns.map(r=>`<tr><td>${r.name}</td><td>${r.impressions?`${r.impressions.toFixed(2)}M`:''}</td><td>${r.clicks?`${r.clicks.toFixed(2)}M`:''}</td><td>${r.cost?`€${r.cost.toFixed(2)}M`:''}</td><td>${r.conversions?`${r.conversions.toFixed(2)}M`:''}</td><td>${r.cpc?`€${r.cpc.toFixed(2)}`:''}</td><td>${r.cpa?`${r.cpa.toFixed(2)}`:''}</td></tr>`).join('')}</tbody>`; byId('onlineFunnelChart').innerHTML=`<polygon points="40,24 340,24 300,86 80,86" fill="#e4002b"></polygon><polygon points="80,100 300,100 272,156 108,156" fill="#f43f5e"></polygon><polygon points="108,170 272,170 248,220 132,220" fill="#fb7185"></polygon><polygon points="132,232 248,232 228,270 152,270" fill="#fecdd3"></polygon><text x="190" y="48" text-anchor="middle" font-size="14" font-weight="700" fill="#ffffff">Impressions</text><text x="190" y="68" text-anchor="middle" font-size="16" font-weight="800" fill="#ffffff">${impressions.toFixed(0)}M</text><text x="190" y="122" text-anchor="middle" font-size="14" font-weight="700" fill="#ffffff">Clicks</text><text x="190" y="142" text-anchor="middle" font-size="16" font-weight="800" fill="#ffffff">${clicks.toFixed(1)}M</text><text x="190" y="190" text-anchor="middle" font-size="14" font-weight="700" fill="#ffffff">Conversions</text><text x="190" y="210" text-anchor="middle" font-size="16" font-weight="800" fill="#ffffff">${(clicks*0.23).toFixed(1)}M</text><text x="190" y="248" text-anchor="middle" font-size="13" font-weight="700" fill="#7f1d1d">CPA</text><text x="190" y="264" text-anchor="middle" font-size="15" font-weight="800" fill="#7f1d1d">€${(cac*0.85).toFixed(0)}</text>`; drawLineChart('onlineCostClicksChart',[12,14,16,18,17,19,21,20,22,24,23,25],[4.2,4.5,4.9,5.1,5.0,5.4,5.8,5.7,6.0,6.3,6.1,6.5],'Cost','Clicks'); drawLineChart('onlineImprConvChart',[180,190,205,214,226,238,245,240,252,264,271,286],[2.8,3.0,3.2,3.4,3.6,3.8,3.9,3.8,4.1,4.3,4.4,4.6],'Impressions','Conversions'); }
+    function renderCompetitive(){ let brands=compBrands.filter(b=>(state.competitive.competitor==='All competitors'||b.brand===state.competitive.competitor)&&(state.competitive.product==='All products'||b.product===state.competitive.product)); if(!brands.length) brands=compBrands; const focus=brands[0]; byId('compKpis').innerHTML=[kpiCard('Share of Voice',`${focus.sov.toFixed(1)}%`,'+1.8pp','vs last quarter'),kpiCard('Share of Investment',`${focus.soi.toFixed(1)}%`,'+1.2pp','vs last quarter'),kpiCard('GRPs',focus.grps.toLocaleString(),'+3.4%','vs last quarter')].join(''); byId('compTable').innerHTML=`<thead><tr><th>Brand</th><th>SOV</th><th>SOI</th><th>GRPs</th><th>Spend Rank</th></tr></thead><tbody>${brands.map(b=>`<tr><td>${b.brand}</td><td>${b.sov.toFixed(1)}%</td><td>${b.soi.toFixed(1)}%</td><td>${b.grps.toLocaleString()}</td><td>#${b.spendRank}</td></tr>`).join('')}</tbody>`; const bubbleSvg=byId('compBubbleChart'); if (bubbleSvg) { const x=v=>60+(v/30)*430; const y=v=>260-(v/30)*190; const r=v=>10+(v/4200)*26; const colors={ santander:'#e4002b', trad:'#94a3b8', digital:'#f59e0b' }; bubbleSvg.innerHTML=`<line x1="50" y1="260" x2="520" y2="260" stroke="#cbd5e1" stroke-width="1.2"></line><line x1="50" y1="40" x2="50" y2="260" stroke="#cbd5e1" stroke-width="1.2"></line><text x="285" y="300" text-anchor="middle" font-size="11" fill="#64748b">Share of Investment</text><text x="16" y="150" transform="rotate(-90 16 150)" text-anchor="middle" font-size="11" fill="#64748b">Share of Voice</text>${[10,20,30].map(v=>`<text x="${x(v)}" y="276" font-size="10" fill="#94a3b8">${v}%</text>`).join('')}${[10,20,30].map(v=>`<text x="22" y="${y(v)+4}" font-size="10" fill="#94a3b8">${v}%</text>`).join('')}${brands.map(b=>`<circle cx="${x(b.soi)}" cy="${y(b.sov)}" r="${r(b.grps)}" fill="${colors[b.type]||'#94a3b8'}" fill-opacity="0.85" stroke="#fff" stroke-width="2"><title>${b.brand}: SOV ${b.sov.toFixed(1)}%, SOI ${b.soi.toFixed(1)}%, GRPs ${b.grps.toLocaleString()}</title></circle><text x="${x(b.soi)}" y="${y(b.sov)+3}" text-anchor="middle" font-size="9" font-weight="700" fill="#111827">${b.brand.substring(0,3).toUpperCase()}</text>`).join('')}<g transform="translate(260,18)"><rect width="10" height="10" fill="#e4002b"></rect><text x="16" y="9" font-size="9" fill="#475569">Santander</text><rect x="110" width="10" height="10" fill="#94a3b8"></rect><text x="126" y="9" font-size="9" fill="#475569">Traditional</text><rect x="210" width="10" height="10" fill="#f59e0b"></rect><text x="226" y="9" font-size="9" fill="#475569">Digital</text></g>`; } drawLineChart('compMarketChart',[2.1,2.4,2.6,2.8,3,3.2,3.1,2.9,3.3,3.5,3.7,3.9],[180,195,205,212,224,236,229,210,242,250,268,284],'Investment','GRPs'); drawBarChart('compChannelChart',[{label:'Radio',value:18,text:'18%'},{label:'Digital',value:31,text:'31%'},{label:'Television',value:37,text:'37%'},{label:'Newspapers',value:14,text:'14%'}],['#e4002b','#f43f5e','#fb7185','#fda4af']); drawBarChart('compProductChart',[{label:'Cards',value:34,text:'34%'},{label:'Current Account',value:27,text:'27%'},{label:'Loans',value:21,text:'21%'},{label:'Mortgage',value:11,text:'11%'},{label:'Savings',value:7,text:'7%'}],['#e4002b','#f43f5e','#fb7185','#fda4af','#fecdd3']); }
+    function renderAll(){ renderOverview(); renderOffline(); renderOnline(); renderCompetitive(); }
+    document.addEventListener('click', (e)=>{ const nav=e.target.closest('[data-page]'); if(nav){ setPage(nav.dataset.page); return; } const marketTarget=e.target.closest('[data-market-select]'); if(marketTarget){ state.market=marketTarget.dataset.marketSelect; syncSelectors(); renderAll(); } });
+    syncSelectors(); renderAll();
+  </script>
+</body>
+</html>
